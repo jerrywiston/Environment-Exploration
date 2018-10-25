@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
     # Initial 2D Environment
     # Start angle, Interval, Size, Max distance, Vel, Ang
-    bot_param = [30, 30.0, 150.0, 60.0, 1.0, 3.0]
+    bot_param = [10, 30.0, 150.0, 60.0, 1.0, 3.0]
     bot_pos = np.array([40.0, 40.0, 0.0])
     env = SingleBotLaser2D(bot_pos, bot_param)
     env.line_list.append([np.array((20,10)), np.array((20,80))])
@@ -142,7 +142,7 @@ if __name__ == '__main__':
         cv2.imshow('view',img)
 
         SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
-        mimg = m.GetMap(-10,100,0,100)
+        mimg = m.GetMap(-100, 200, -100, 200)
         mimg = (255*mimg).astype(np.uint8)
         mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
         cv2.imshow('map',mimg)
