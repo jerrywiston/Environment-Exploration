@@ -142,7 +142,7 @@ if __name__ == '__main__':
         cv2.imshow('view',img)
 
         SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
-        mimg = m.GetMap(-100,100,-100,100)
+        mimg = m.GetMap(-10,100,0,100)
         mimg = (255*mimg).astype(np.uint8)
         mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
         cv2.imshow('map',mimg)

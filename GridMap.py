@@ -13,15 +13,15 @@ class GridMap:
             return 0.5
 
     def GetMap(self, x0, x1, y0, y1):
-        out = np.zeros((x1-x0, y1-y0))
+        out = np.zeros((y1-y0, x1-x0))
+
         idx = 0
-        idy = 0
         for i in range(x0, x1):
-            idx = 0
+            idy = 0
             for j in range(y0, y1):
-                out[idx,idy] = self.GetProb((i,j))
-                idx += 1
-            idy += 1
+                out[idy, idx] = self.GetProb((i,j))
+                idy += 1
+            idx += 1
         return out
 
     def GridMapLine(self, x0, x1, y0, y1):
