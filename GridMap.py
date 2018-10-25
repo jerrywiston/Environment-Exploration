@@ -14,9 +14,14 @@ class GridMap:
 
     def GetMap(self, x0, x1, y0, y1):
         out = np.zeros((x1-x0, y1-y0))
+        idx = 0
+        idy = 0
         for i in range(x0, x1):
+            idx = 0
             for j in range(y0, y1):
-                out[i,j] = self.GetProb((i,j))
+                out[idx,idy] = self.GetProb((i,j))
+                idx += 1
+            idy += 1
         return out
 
     def GridMapLine(self, x0, x1, y0, y1):

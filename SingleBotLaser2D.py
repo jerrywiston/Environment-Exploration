@@ -110,10 +110,10 @@ def SensorMap(m, bot_pos, bot_param, sensor_data):
             continue
         theta = bot_pos[2] + bot_param[1] + i*inter
         m.GridMapLine(
-        int(bot_pos[1]),
-        int(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta))),
         int(bot_pos[0]), 
-        int(bot_pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta)))
+        int(bot_pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta))),
+        int(bot_pos[1]),
+        int(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta)))
         )
 
 
@@ -134,7 +134,8 @@ if __name__ == '__main__':
     env.line_list.append([np.array((80,10)), np.array((80,80))])
 
     # Main Loop
-    cv2.namedWindow('view', cv2.WINDOW_NORMAL)
+    cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow('map', cv2.WINDOW_AUTOSIZE)
     while(1):
         sensor_data = env.Sensor()
         img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
