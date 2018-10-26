@@ -106,7 +106,7 @@ def Draw(bot_pos, line_list, sensor_data, bot_param, scale=5.0, view=(512,512)):
 def SensorMap(m, bot_pos, bot_param, sensor_data):
     inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
     for i in range(bot_param[0]):
-        if sensor_data[i] > bot_param[3]-3 or sensor_data[i] < 1:
+        if sensor_data[i] > bot_param[3]-1 or sensor_data[i] < 1:
             continue
         theta = bot_pos[2] + bot_param[1] + i*inter
         m.GridMapLine(
@@ -116,16 +116,29 @@ def SensorMap(m, bot_pos, bot_param, sensor_data):
         int(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta)))
         )
 
+def MappingProcess(env):
+    sensor_data = env.Sensor()
+    img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
+    SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
+    mimg = m.GetMap(-100, 200, -100, 200)
+    mimg = (255*mimg).astype(np.uint8)
+    mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
+
+    return img, mimg
 
 if __name__ == '__main__':
-    # Initial Grid Map
+    # Initialize OpenCV Windows
+    cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow('map', cv2.WINDOW_AUTOSIZE)
+
+    # Initialize Grid Map
     # lo_occ, lo_free, lo_max, lo_min
-    map_param = [0.3, -0.3, 5.0, -5.0]
+    map_param = [0.4, -0.4, 5.0, -5.0] 
     m = GridMap(map_param)
 
-    # Initial 2D Environment
-    # Start angle, Interval, Size, Max distance, Vel, Ang
-    bot_param = [10, 30.0, 150.0, 60.0, 1.0, 3.0]
+    # Initialize 2D Environment
+    # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
+    bot_param = [30, 30.0, 150.0, 60.0, 1.0, 3.0]
     bot_pos = np.array([40.0, 40.0, 0.0])
     env = SingleBotLaser2D(bot_pos, bot_param)
     env.line_list.append([np.array((20,10)), np.array((20,80))])
@@ -133,20 +146,13 @@ if __name__ == '__main__':
     env.line_list.append([np.array((20,80)), np.array((80,80))])
     env.line_list.append([np.array((80,10)), np.array((80,80))])
 
+    # Initialize Mapping
+    img, mimg = MappingProcess(env)
+    cv2.imshow('view',img)
+    cv2.imshow('map',mimg)
+
     # Main Loop
-    cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow('map', cv2.WINDOW_AUTOSIZE)
     while(1):
-        sensor_data = env.Sensor()
-        img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
-        cv2.imshow('view',img)
-
-        SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
-        mimg = m.GetMap(-100, 200, -100, 200)
-        mimg = (255*mimg).astype(np.uint8)
-        mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
-        cv2.imshow('map',mimg)
-
         # Input Control
         k = cv2.waitKey(1)
         if k==ord('w'):
@@ -166,6 +172,11 @@ if __name__ == '__main__':
             env.BotAction(7)
         if k==ord('k'):
             env.BotAction(8)
+        
+        if k>0:
+            img, mimg = MappingProcess(env)
+            cv2.imshow('view',img)
+            cv2.imshow('map',mimg)
         
 
     cv2.destroyAllWindows()
