@@ -47,6 +47,7 @@ def AdaptiveGetMap(gmap):
     mimg = gmap.GetMapProb(
         gmap.boundary[0]-20, gmap.boundary[1]+20, 
         gmap.boundary[2]-20, gmap.boundary[3]+20 )
+    #mimg = gmap.GetMapProb(0,500,0,500)
     mimg = (255*mimg).astype(np.uint8)
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
     return mimg
@@ -133,5 +134,6 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
             cv2.imshow('p0_map',imgp0)
+            pf.Resampling(sensor_data)
         
     cv2.destroyAllWindows()

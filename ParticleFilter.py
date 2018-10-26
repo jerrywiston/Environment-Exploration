@@ -12,7 +12,7 @@ class Particle:
         self.bot_param = bot_param
         self.gmap = gmap
 
-    def Sampling(self, aid, sig=[2, 2, 2.0]):
+    def Sampling(self, aid, sig=[1, 1, 1]):
         vec = [np.sin(np.deg2rad(self.pos[2])), np.cos(np.deg2rad(self.pos[2]))]
         vel = self.bot_param[4]
         ang = self.bot_param[5]
@@ -64,11 +64,13 @@ class Particle:
     def LikelihoodField(self, sensor_data):
         p_hit = 0.9
         p_rand = 0.1
-        sig_hit = 1.5
+        sig_hit = 2.0
         q = 1
         plist = utils.EndPoint(self.pos, self.bot_param, sensor_data)
-        for pts in plist:
-            dist = self.NearestDistance(pts[0], pts[1], 3, 0.3)
+        for i in range(len(plist)):
+            if sensor_data[i] > self.bot_param[3]-1 or sensor_data[i] < 1:
+                continue
+            dist = self.NearestDistance(plist[i][0], plist[i][1], 2, 0.2)
             q = q * (p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
             #q += math.log(p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
         return q
@@ -95,9 +97,9 @@ class ParticleFilter:
         for i in range(size):
             self.particle_list.append(copy.deepcopy(p))
     
-    def ParticleMapping(sensor_data):
+    def ParticleMapping(plist, sensor_data):
         threads = []
-        for p in self.particle_list:
+        for p in plist:
             threads.append(threading.Thread(target=p.Mapping, args=(sensor_data,)))
 
         for t in threads:
@@ -106,7 +108,7 @@ class ParticleFilter:
         for t in threads:
             t.join()
 
-    def ReSampling(self, sensor_data):
+    def Resampling(self, sensor_data):
         map_rec = np.zeros((self.size))
         re_id = np.random.choice(self.size, self.size, p=list(self.weights))
         new_particle_list = []
@@ -126,4 +128,4 @@ class ParticleFilter:
             #self.particle_list[i].Mapping(sensor_data)
 
         self.weights = field / np.sum(field)
-        self.ReSampling(sensor_data)
+        #self.Resampling(sensor_data)
