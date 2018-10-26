@@ -117,7 +117,7 @@ def MappingProcess(env):
     sensor_data = env.Sensor()
     img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
     SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
-    mimg = m.GetMapProb(-100, 200, -100, 200)
+    mimg = m.GetMapProb(-50, 200, -50, 200)
     mimg = (255*mimg).astype(np.uint8)
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
 
@@ -135,13 +135,24 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [30, 30.0, 150.0, 60.0, 1.0, 3.0]
+    bot_param = [60, 30.0, 150.0, 50.0, 1.0, 3.0]
     bot_pos = np.array([40.0, 40.0, 0.0])
     env = SingleBotLaser2D(bot_pos, bot_param)
-    env.line_list.append([np.array((20,10)), np.array((20,80))])
-    env.line_list.append([np.array((20,10)), np.array((80,10))])
-    env.line_list.append([np.array((20,80)), np.array((80,80))])
-    env.line_list.append([np.array((80,10)), np.array((80,80))])
+    env.line_list.append([np.array((10,10)), np.array((10,90))])
+    env.line_list.append([np.array((10,10)), np.array((80,10))])
+    env.line_list.append([np.array((10,90)), np.array((80,90))])
+    env.line_list.append([np.array((80,10)), np.array((80,90))])
+
+    env.line_list.append([np.array((40,10)), np.array((50,30))])
+    env.line_list.append([np.array((45,10)), np.array((55,30))])
+    env.line_list.append([np.array((50,30)), np.array((55,30))])
+
+    env.line_list.append([np.array((70,50)), np.array((60,90))])
+    env.line_list.append([np.array((70,50)), np.array((80,50))])
+    
+    env.line_list.append([np.array((20,70)), np.array((40,70))])
+    env.line_list.append([np.array((20,70)), np.array((20,90))])
+    env.line_list.append([np.array((40,70)), np.array((40,90))])
 
     # Initialize Mapping
     img, mimg = MappingProcess(env)
