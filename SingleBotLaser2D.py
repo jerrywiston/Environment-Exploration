@@ -40,9 +40,7 @@ class SingleBotLaser2D:
         inter = (self.bot_param[2] - self.bot_param[1]) / (self.bot_param[0]-1)
         for i in range(bot_param[0]):
             theta = self.bot_pos[2] + self.bot_param[1] + i*inter
-            sense_data.append(
-                self.RayCast(np.array((self.bot_pos[0], self.bot_pos[1])), theta)
-            )
+            sense_data.append(self.RayCast(np.array((self.bot_pos[0], self.bot_pos[1])), theta))
         return sense_data
 
     def RayCast(self, pos, theta):
@@ -62,7 +60,6 @@ class SingleBotLaser2D:
         if np.cross(r, s) == 0 and np.cross((q-p), r) == 0:    # collinear
             t0 = np.dot(q-p, r)/np.dot(r, r)
             t1 = t0 + np.dot(s, r)/np.dot(r, r)
-            #print(t1, t0)
             if ((np.dot(s, r) > 0) and (0 <= t1 - t0 <= 1)) or ((np.dot(s, r) <= 0) and (0 <= t0 - t1 <= 1)):
                 #print('collinear and overlapping, q_s in p_r')
                 return 0.0
@@ -120,7 +117,7 @@ def MappingProcess(env):
     sensor_data = env.Sensor()
     img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
     SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
-    mimg = m.GetMap(-100, 200, -100, 200)
+    mimg = m.GetMapProb(-100, 200, -100, 200)
     mimg = (255*mimg).astype(np.uint8)
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
 
@@ -134,7 +131,7 @@ if __name__ == '__main__':
     # Initialize Grid Map
     # lo_occ, lo_free, lo_max, lo_min
     map_param = [0.4, -0.4, 5.0, -5.0] 
-    m = GridMap(map_param)
+    m = GridMap(map_param, gsize=0.5)
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
@@ -178,5 +175,4 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
         
-
     cv2.destroyAllWindows()

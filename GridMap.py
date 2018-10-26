@@ -6,25 +6,28 @@ class GridMap:
         self.gmap = {}
         self.gsize = gsize
 
-    def GetProb(self, pos):
+    def GetGridProb(self, pos):
         if pos in self.gmap:
             return np.exp(self.gmap[pos]) / (1.0 + np.exp(self.gmap[pos]))
         else:
             return 0.5
 
-    def GetMap(self, x0, x1, y0, y1):
-        out = np.zeros((y1-y0, x1-x0))
-
+    def GetMapProb(self, x0, x1, y0, y1):
+        map_prob = np.zeros((y1-y0, x1-x0))
         idx = 0
         for i in range(x0, x1):
             idy = 0
             for j in range(y0, y1):
-                out[idy, idx] = self.GetProb((i,j))
+                map_prob[idy, idx] = self.GetGridProb((i,j))
                 idy += 1
             idx += 1
-        return out
+        return map_prob
 
     def GridMapLine(self, x0, x1, y0, y1):
+        # Scale the position
+        x0, x1 = int(round(x0/self.gsize)), int(round(x1/self.gsize))
+        y0, y1 = int(round(y0/self.gsize)), int(round(y1/self.gsize))
+
         rec = self.Bresenham(x0, x1, y0, y1)
         for i in range(len(rec)):
             if i < len(rec)-2:
