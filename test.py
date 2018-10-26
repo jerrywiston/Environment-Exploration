@@ -82,7 +82,7 @@ if __name__ == '__main__':
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
     map_param = [0.4, -0.4, 5.0, -5.0] 
-    m = GridMap(map_param, gsize=0.8)
+    m = GridMap(map_param, gsize=0.5)
     sensor_data = env.Sensor()
     SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
 
@@ -92,7 +92,7 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 3000)
+    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
 
     # Main Loop
     while(1):
