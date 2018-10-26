@@ -5,6 +5,7 @@ class GridMap:
         self.map_param = map_param
         self.gmap = {}
         self.gsize = gsize
+        self.boundary = [9999,-9999,9999,-9999]
 
     def GetGridProb(self, pos):
         if pos in self.gmap:
@@ -39,6 +40,14 @@ class GridMap:
                 self.gmap[rec[i]] += change
             else:
                 self.gmap[rec[i]] = change
+                if rec[i][0] < self.boundary[0]:
+                    self.boundary[0] = rec[i][0]
+                elif rec[i][0] > self.boundary[1]:
+                    self.boundary[1] = rec[i][0]
+                if rec[i][1] < self.boundary[2]:
+                    self.boundary[2] = rec[i][1]
+                elif rec[i][1] > self.boundary[3]:
+                    self.boundary[3] = rec[i][1]
 
             if self.gmap[rec[i]] > self.map_param[2]:
                 self.gmap[rec[i]] = self.map_param[2]

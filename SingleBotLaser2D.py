@@ -117,7 +117,8 @@ def MappingProcess(env):
     sensor_data = env.Sensor()
     img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
     SensorMap(m, env.bot_pos, env.bot_param, sensor_data)
-    mimg = m.GetMapProb(-50, 200, -50, 200)
+    #mimg = m.GetMapProb(0, 200, 0, 200)
+    mimg = m.GetMapProb(m.boundary[0]-20, m.boundary[1]+20, m.boundary[2]-20, m.boundary[3]+20)
     mimg = (255*mimg).astype(np.uint8)
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
 
