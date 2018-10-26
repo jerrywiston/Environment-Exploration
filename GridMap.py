@@ -31,7 +31,7 @@ class GridMap:
 
         rec = self.Bresenham(x0, x1, y0, y1)
         for i in range(len(rec)):
-            if i < len(rec)-2:
+            if i < len(rec)-3:
                 change = self.map_param[0]
             else:
                 change = self.map_param[1]
