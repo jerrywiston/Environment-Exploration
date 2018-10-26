@@ -13,6 +13,10 @@ class GridMap:
         else:
             return 0.5
 
+    def GetCoordProb(self, pos):
+        x, y = int(round(pos[0]/self.gsize)), int(round(pos[1]/self.gsize))
+        return self.GetGridProb((x,y))
+
     def GetMapProb(self, x0, x1, y0, y1):
         map_prob = np.zeros((y1-y0, x1-x0))
         idx = 0

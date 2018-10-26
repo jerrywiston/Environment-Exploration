@@ -2,9 +2,9 @@ import numpy as np
 import cv2
 from SingleBotLaser2D import *
 from GridMap import *
-from Particle import *
+from ParticleFilter import *
+import utils
 import copy
-import threading
 
 def Draw(bot_pos, line_list, sensor_data, bot_param, scale=5.0, view=(512,512)):
     img = 255*np.ones((512,512,3), np.uint8)
@@ -13,17 +13,15 @@ def Draw(bot_pos, line_list, sensor_data, bot_param, scale=5.0, view=(512,512)):
         pt1 = np.round(scale * line[0])
         pt2 = np.round(scale * line[1])
         cv2.line(img, tuple(pt1.astype(np.int).tolist()), tuple(pt2.astype(np.int).tolist()), (0,0,0), 3)
-    
-    inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
-    for i in range(bot_param[0]):
-        theta = bot_pos[2] + bot_param[1] + i*inter
+
+    plist = utils.EndPoint(bot_pos, bot_param, sensor_data)
+    for pts in plist:
         cv2.line(
             img, 
             (int(scale*bot_pos[0]), int(scale*bot_pos[1])), 
-            (   int(scale*(bot_pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta)))), 
-                int(scale*(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta))))  ),
+            (int(scale*pts[0]), int(scale*pts[1])),
             (255,0,0), 1)
-    
+
     cv2.circle(img,(int(scale*bot_pos[0]), int(scale*bot_pos[1])), int(scale*1.5), (0,0,255), -1)
     return img
 
@@ -46,25 +44,12 @@ def SensorMapping(m, bot_pos, bot_param, sensor_data):
         )
 
 def AdaptiveGetMap(gmap):
-    mimg = gmap.GetMapProb(gmap.boundary[0]-20, gmap.boundary[1]+20, gmap.boundary[2]-20, gmap.boundary[3]+20)
+    mimg = gmap.GetMapProb(
+        gmap.boundary[0]-20, gmap.boundary[1]+20, 
+        gmap.boundary[2]-20, gmap.boundary[3]+20 )
     mimg = (255*mimg).astype(np.uint8)
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
     return mimg
-
-def ParticleSample(plist, control, sig):
-    for p in plist:
-        p.Sampling(control, sig)
-
-def ParticleMapping(plist, sensor_data):
-    threads = []
-    for p in plist:
-        threads.append(threading.Thread(target=p.Mapping, args=(sensor_data,)))
-
-    for t in threads:
-        t.start()
-
-    for t in threads:
-        t.join()
     
 if __name__ == '__main__':
     # Initialize OpenCV Windows
@@ -73,7 +58,7 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [60, 30.0, 150.0, 50.0, 1.0, 3.0]
+    bot_param = [60, 10.0, 170.0, 50.0, 1.0, 3.0]
     bot_pos = np.array([40.0, 40.0, 0.0])
     env = SingleBotLaser2D(bot_pos, bot_param)
 
@@ -97,7 +82,7 @@ if __name__ == '__main__':
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
     map_param = [0.4, -0.4, 5.0, -5.0] 
-    m = GridMap(map_param, gsize=0.5)
+    m = GridMap(map_param, gsize=0.8)
     sensor_data = env.Sensor()
     SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
 
@@ -107,10 +92,7 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    particle_list = []
-    for i in range(30):
-        p = Particle(bot_pos.copy(), bot_param, copy.deepcopy(m))
-        particle_list.append(p)
+    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 3000)
 
     # Main Loop
     while(1):
@@ -143,12 +125,11 @@ if __name__ == '__main__':
             img = Draw(env.bot_pos, env.line_list, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            ParticleSample(particle_list, action, [0.5,0.5,2])
-            ParticleMapping(particle_list, sensor_data)
-            #particle_list[0].Mapping(sensor_data)
-            imgp0 = AdaptiveGetMap(particle_list[0].gmap)
+            pf.Feed(action, sensor_data)
+            mid = np.argmax(pf.weights)
+            imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             
-            img = DrawParticle(img, particle_list)
+            img = DrawParticle(img, pf.particle_list)
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
             cv2.imshow('p0_map',imgp0)
