@@ -1,4 +1,5 @@
 import numpy as np
+import random
 
 class SingleBotLaser2D:
     def __init__(self, bot_pos, bot_param):
@@ -32,6 +33,11 @@ class SingleBotLaser2D:
             self.bot_pos[0] += vel
         if aid == 8:
             self.bot_pos[1] += vel
+        
+        sig=[0.5,0.5,0.5]
+        self.bot_pos[0] += random.gauss(0,sig[0])
+        self.bot_pos[1] += random.gauss(0,sig[1])
+        self.bot_pos[2] += random.gauss(0,sig[2])
 
     def Sensor(self):
         sense_data = []

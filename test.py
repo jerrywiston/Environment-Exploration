@@ -59,7 +59,7 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [60, 10.0, 170.0, 50.0, 1.0, 3.0]
+    bot_param = [60, -30.0, 210.0, 50.0, 1.0, 3.0]
     bot_pos = np.array([40.0, 40.0, 0.0])
     env = SingleBotLaser2D(bot_pos, bot_param)
 

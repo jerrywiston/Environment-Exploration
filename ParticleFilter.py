@@ -12,7 +12,7 @@ class Particle:
         self.bot_param = bot_param
         self.gmap = gmap
 
-    def Sampling(self, aid, sig=[1, 1, 1]):
+    def Sampling(self, aid, sig=[0.5,0.5,0.5]):
         vec = [np.sin(np.deg2rad(self.pos[2])), np.cos(np.deg2rad(self.pos[2]))]
         vel = self.bot_param[4]
         ang = self.bot_param[5]
@@ -38,7 +38,7 @@ class Particle:
             self.pos[0] += vel
         if aid == 8:
             self.pos[1] += vel
-        
+
         self.pos[0] += random.gauss(0,sig[0])
         self.pos[1] += random.gauss(0,sig[1])
         self.pos[2] += random.gauss(0,sig[2])
@@ -64,13 +64,13 @@ class Particle:
     def LikelihoodField(self, sensor_data):
         p_hit = 0.9
         p_rand = 0.1
-        sig_hit = 2.0
+        sig_hit = 3.0
         q = 1
         plist = utils.EndPoint(self.pos, self.bot_param, sensor_data)
         for i in range(len(plist)):
             if sensor_data[i] > self.bot_param[3]-1 or sensor_data[i] < 1:
                 continue
-            dist = self.NearestDistance(plist[i][0], plist[i][1], 2, 0.2)
+            dist = self.NearestDistance(plist[i][0], plist[i][1], 4, 0.2)
             q = q * (p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
             #q += math.log(p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
         return q
