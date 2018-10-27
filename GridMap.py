@@ -1,4 +1,5 @@
 import numpy as np
+import utils
 
 class GridMap:
     def __init__(self, map_param, gsize=1.0):
@@ -33,7 +34,7 @@ class GridMap:
         x0, x1 = int(round(x0/self.gsize)), int(round(x1/self.gsize))
         y0, y1 = int(round(y0/self.gsize)), int(round(y1/self.gsize))
 
-        rec = self.Bresenham(x0, x1, y0, y1)
+        rec = utils.Bresenham(x0, x1, y0, y1)
         for i in range(len(rec)):
             if i < len(rec)-2:
                 change = self.map_param[0]
@@ -58,34 +59,6 @@ class GridMap:
             if self.gmap[rec[i]] < self.map_param[3]:
                 self.gmap[rec[i]] = self.map_param[3]
     
-    def Bresenham(self, x0, x1, y0, y1):
-        rec = []
-        "Bresenham's line algorithm"
-        dx = abs(x1 - x0)
-        dy = abs(y1 - y0)
-        x, y = x0, y0
-        sx = -1 if x0 > x1 else 1
-        sy = -1 if y0 > y1 else 1
-        if dx > dy:
-            err = dx / 2.0
-            while x != x1:
-                rec.append((x, y))
-                err -= dy
-                if err < 0:
-                    y += sy
-                    err += dx
-                x += sx
-        else:
-            err = dy / 2.0
-            while y != y1:
-                rec.append((x, y))
-                err -= dx
-                if err < 0:
-                    x += sx
-                    err += dy
-                y += sy
-        return rec
-
 if __name__ == '__main__':
     #lo_occ, lo_free, lo_max, lo_min
     map_param = [0.9, -0.7, 5.0, -5.0]
@@ -94,4 +67,3 @@ if __name__ == '__main__':
     m.gmap[pos] = 0.1
     print(m.GetProb(pos))
     print(m.GetProb((0,0)))
-    print(m.Bresenham(0,5,0,3))

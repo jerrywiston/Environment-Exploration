@@ -12,7 +12,7 @@ class Particle:
         self.bot_param = bot_param
         self.gmap = gmap
 
-    def Sampling(self, aid, sig=[0.5,0.5,0.5]):
+    def Sampling(self, aid, sig=[0.4,0.4,0.4]):
         vec = [np.sin(np.deg2rad(self.pos[2])), np.cos(np.deg2rad(self.pos[2]))]
         vel = self.bot_param[4]
         ang = self.bot_param[5]
