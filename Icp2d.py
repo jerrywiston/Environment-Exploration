@@ -22,6 +22,7 @@ def Align(Xc, Pc):
     return R, T
 
 def Icp(iter, X, P):
+    # X = R * P + T
     if X.shape[0] < 20:
         return np.eye(2), np.zeros((2), dtype=float)
     
