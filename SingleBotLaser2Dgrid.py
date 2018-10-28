@@ -190,7 +190,7 @@ if __name__ == '__main__':
             img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            pf.Feed(action, sensor_data)
+            #pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             
@@ -198,6 +198,6 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
             cv2.imshow('p0_map',imgp0)
-            pf.Resampling(sensor_data)
+            #pf.Resampling(sensor_data)
         
     cv2.destroyAllWindows()
