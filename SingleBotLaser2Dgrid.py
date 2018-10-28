@@ -12,6 +12,11 @@ class SingleBotLaser2Dgrid:
         self.bot_pos = bot_pos
         self.bot_param = bot_param
         self.img_map = self.Image2Map(fname)
+
+        scale = 0.5
+        img = self.Image2Map(fname)
+        img = cv2.resize(img, (round(scale*img.shape[1]), round(scale*img.shape[0])), interpolation=cv2.INTER_LINEAR)
+        self.img_map = img
     
     def BotAction(self, aid):
         vec = [np.sin(np.deg2rad(self.bot_pos[2])), np.cos(np.deg2rad(self.bot_pos[2]))]
@@ -40,7 +45,7 @@ class SingleBotLaser2Dgrid:
         if aid == 8:
             self.bot_pos[1] += vel
         
-        sig=[0.4,0.4,0.4]
+        sig=[0.5,0.5,0.5]
         self.bot_pos[0] += random.gauss(0,sig[0])
         self.bot_pos[1] += random.gauss(0,sig[1])
         self.bot_pos[2] += random.gauss(0,sig[2])
@@ -65,7 +70,7 @@ class SingleBotLaser2Dgrid:
         for p in plist:
             if p[1] >= self.img_map.shape[0] or p[0] >= self.img_map.shape[1]:
                 continue
-            if self.img_map[p[1], p[0]] < 0.2:
+            if self.img_map[p[1], p[0]] < 0.5:
                 tmp = math.pow((float(p[0]) - x0), 2) + math.pow((float(p[1]) - y0), 2)
                 tmp = math.sqrt(tmp)
                 dist.append(tmp)
@@ -101,7 +106,7 @@ def Draw(img_map, scale, bot_pos, sensor_data, bot_param):
     cv2.circle(img,(int(scale*bot_pos[0]), int(scale*bot_pos[1])), int(3*scale), (0,0,255), -1)
     return img
 
-def DrawParticle(img, plist, scale=5.0):
+def DrawParticle(img, plist, scale=1.0):
     for p in plist:
         cv2.circle(img,(int(scale*p.pos[0]), int(scale*p.pos[1])), int(2), (0,200,0), -1)
     return img
@@ -135,18 +140,18 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [60, -30.0, 210.0, 100.0, 3.0, 3.0]
-    bot_pos = np.array([300.0, 200.0, 180.0])
-    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
+    bot_param = [100, -30.0, 210.0, 100.0, 3.0, 3.0]
+    bot_pos = np.array([150.0, 100.0, 180.0])
+    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map_large.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
     map_param = [0.4, -0.4, 5.0, -5.0] 
-    m = GridMap(map_param, gsize=0.5)
+    m = GridMap(map_param, gsize=1.0)
     sensor_data = env.Sensor()
     SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
 
-    img = Draw(env.img_map, 2, env.bot_pos, sensor_data, env.bot_param)
+    img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
     mimg = AdaptiveGetMap(m)
     cv2.imshow('view',img)
     cv2.imshow('map',mimg)
@@ -182,10 +187,10 @@ if __name__ == '__main__':
             sensor_data = env.Sensor()
             SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
     
-            img = Draw(env.img_map, 2, env.bot_pos, sensor_data, env.bot_param)
+            img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            #pf.Feed(action, sensor_data)
+            pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             
@@ -193,6 +198,6 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
             cv2.imshow('p0_map',imgp0)
-            #pf.Resampling(sensor_data)
+            pf.Resampling(sensor_data)
         
     cv2.destroyAllWindows()
