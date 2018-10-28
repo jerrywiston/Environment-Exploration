@@ -6,6 +6,8 @@ import math
 from GridMap import *
 from ParticleFilter import *
 import copy
+import matplotlib.pyplot as plt
+import Icp2d
 
 class SingleBotLaser2Dgrid:
     def __init__(self, bot_pos, bot_param, fname):
@@ -15,7 +17,7 @@ class SingleBotLaser2Dgrid:
 
         scale = 0.5
         img = self.Image2Map(fname)
-        img = cv2.resize(img, (round(scale*img.shape[1]), round(scale*img.shape[0])), interpolation=cv2.INTER_LINEAR)
+        #img = cv2.resize(img, (round(scale*img.shape[1]), round(scale*img.shape[0])), interpolation=cv2.INTER_LINEAR)
         self.img_map = img
     
     def BotAction(self, aid):
@@ -70,7 +72,7 @@ class SingleBotLaser2Dgrid:
         for p in plist:
             if p[1] >= self.img_map.shape[0] or p[0] >= self.img_map.shape[1]:
                 continue
-            if self.img_map[p[1], p[0]] < 0.5:
+            if self.img_map[p[1], p[0]] < 0.6:
                 tmp = math.pow((float(p[0]) - x0), 2) + math.pow((float(p[1]) - y0), 2)
                 tmp = math.sqrt(tmp)
                 dist.append(tmp)
@@ -133,6 +135,55 @@ def AdaptiveGetMap(gmap):
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
     return mimg
 
+def SensorData2PointCloud(sensor_data, bot_pos, bot_param):
+    plist = utils.EndPoint(bot_pos, bot_param, sensor_data)
+    tmp = []
+    for i in range(len(sensor_data)):
+        if sensor_data[i] > bot_param[3]-1 or sensor_data[i] < 1:
+            continue
+        tmp.append(plist[i])
+    tmp = np.array(tmp)
+    return tmp
+
+def DrawAlign(Xc, Pc, R, T):
+    if Xc.shape[0] < 20 or Pc.shape[0] < 20:
+        return 255*np.ones((100,100), np.uint8)
+    shift = 10.0
+    Xc_ = Icp2d.Transform(xc, R, T)
+    max_x = np.max(np.array([np.max(Xc_[:,0]), np.max(Pc[:,0])]) )
+    max_y = np.max(np.array([np.max(Xc_[:,1]), np.max(Pc[:,1])]) )
+    min_x = np.min(np.array([np.min(Xc_[:,0]), np.min(Pc[:,0])]) )
+    min_y = np.min(np.array([np.min(Xc_[:,1]), np.min(Pc[:,1])]) )
+    img = 255*np.ones((int(max_y-min_y+2*shift),int(max_x-min_x+2*shift),3), np.uint8)
+    for i in range(Xc_.shape[0]):
+       cv2.circle(img, (int(Xc_[i,0]-min_x+shift), int(Xc_[i,1]-min_y+shift)), int(1), (0,0,255), -1)
+    for i in range(Pc.shape[0]):
+       cv2.circle(img, (int(Pc[i,0]-min_x+shift), int(Pc[i,1]-min_y+shift)), int(1), (255,0,0), -1)
+    return img
+ 
+
+def Rotation2Deg(R):
+    cos = R[0,0]
+    sin = R[1,0]
+    theta = np.rad2deg(np.arccos(np.abs(cos)))
+    
+    if cos>0 and sin>0:
+        return theta
+    elif cos<0 and sin>0:
+        return 180-theta
+    elif cos<0 and sin<0:
+        return 180+theta
+    elif cos>0 and sin<0:
+        return 360-theta
+    elif cos==0 and sin>0:
+        return 90.0
+    elif cos==0 and sin<0:
+        return 270.0
+    elif cos>0 and sin==0:
+        return 0.0
+    elif cos<0 and sin==0:
+        return 180.0
+
 if __name__ == '__main__':
     # Initialize OpenCV Windows
     cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
@@ -140,9 +191,9 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [100, -30.0, 210.0, 100.0, 3.0, 3.0]
-    bot_pos = np.array([150.0, 100.0, 180.0])
-    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map_large.png')
+    bot_param = [500, -30.0, 210.0, 150.0, 3.0, 3.0]
+    bot_pos = np.array([150.0, 100.0, 0.0])
+    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
@@ -158,6 +209,12 @@ if __name__ == '__main__':
 
     # Initialize Particle
     pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
+    sensor_data_rec = sensor_data.copy()
+    
+    # Scan Matching Test
+    matching_m = GridMap(map_param, gsize=1.0)
+    SensorMapping(matching_m, env.bot_pos, env.bot_param, sensor_data)
+    matching_pos = np.array([150.0, 100.0, 0.0])
 
     # Main Loop
     while(1):
@@ -197,7 +254,27 @@ if __name__ == '__main__':
             img = DrawParticle(img, pf.particle_list)
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
-            cv2.imshow('p0_map',imgp0)
+
+            #cv2.imshow('p0_map',imgp0)
             #pf.Resampling(sensor_data)
+
+            pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
+            xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
+            R,T = Icp2d.Icp(300,pc,xc)
+            Ttot = np.array([[matching_pos[0], matching_pos[1]]])
+            Ttot = Icp2d.Transform(Ttot, R, T)[0]
+            theta = matching_pos[2]
+            deg = Rotation2Deg(R)
+            matching_pos = [Ttot[0], Ttot[1], matching_pos[2] + deg]
+            aimg = DrawAlign(xc, pc, R, T)
+            cv2.imshow('align',aimg)
+
+            SensorMapping(matching_m, matching_pos, env.bot_param, sensor_data)
+            matching_img = AdaptiveGetMap(matching_m)
+            cv2.imshow('matching_map',matching_img)
+
+            
+            sensor_data_rec = sensor_data.copy()
+
         
     cv2.destroyAllWindows()
