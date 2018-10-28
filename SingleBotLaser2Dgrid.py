@@ -156,12 +156,11 @@ def DrawAlign(Xc, Pc, R, T):
     min_y = np.min(np.array([np.min(Xc_[:,1]), np.min(Pc[:,1])]) )
     img = 255*np.ones((int(max_y-min_y+2*shift),int(max_x-min_x+2*shift),3), np.uint8)
     for i in range(Xc_.shape[0]):
-       cv2.circle(img, (int(Xc_[i,0]-min_x+shift), int(Xc_[i,1]-min_y+shift)), int(1), (0,0,255), -1)
+       cv2.circle(img, (int(Xc_[i,0]-min_x+shift), int(Xc_[i,1]-min_y+shift)), int(2), (0,0,255), -1)
     for i in range(Pc.shape[0]):
-       cv2.circle(img, (int(Pc[i,0]-min_x+shift), int(Pc[i,1]-min_y+shift)), int(1), (255,0,0), -1)
+       cv2.circle(img, (int(Pc[i,0]-min_x+shift), int(Pc[i,1]-min_y+shift)), int(2), (255,0,0), -1)
     return img
  
-
 def Rotation2Deg(R):
     cos = R[0,0]
     sin = R[1,0]
@@ -191,7 +190,7 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [500, -30.0, 210.0, 150.0, 3.0, 3.0]
+    bot_param = [300, -30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([150.0, 100.0, 0.0])
     env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
 
@@ -208,7 +207,7 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
+    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 50)
     sensor_data_rec = sensor_data.copy()
     
     # Scan Matching Test
@@ -247,7 +246,7 @@ if __name__ == '__main__':
             img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            #pf.Feed(action, sensor_data)
+            pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             
@@ -255,8 +254,8 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
 
-            #cv2.imshow('p0_map',imgp0)
-            #pf.Resampling(sensor_data)
+            cv2.imshow('particle_map',imgp0)
+            pf.Resampling(sensor_data)
 
             pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
             xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
