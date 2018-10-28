@@ -7,6 +7,7 @@ from GridMap import *
 from ParticleFilter import *
 import copy
 import matplotlib.pyplot as plt
+import Icp2d
 
 class SingleBotLaser2Dgrid:
     def __init__(self, bot_pos, bot_param, fname):
@@ -144,6 +145,19 @@ def SensorData2PointCloud(sensor_data, bot_pos, bot_param):
     tmp = np.array(tmp)
     return tmp
 
+def Rotation2Deg(R):
+    cos = R[0,0]
+    sin = R[1,0]
+    theta = np.rad2deg(np.arccos(np.abs(cos)))
+    if cos>0 and sin>0:
+        return theta
+    elif cos<0 and sin>0:
+        return 180-theta
+    elif cos<0 and sin<0:
+        return 180+theta
+    elif cos>0 and sin<0:
+        return 360-theta
+
 if __name__ == '__main__':
     # Initialize OpenCV Windows
     cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
@@ -169,7 +183,12 @@ if __name__ == '__main__':
 
     # Initialize Particle
     pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
-    sensor_rec = sensor_data.copy()
+    sensor_data_rec = sensor_data.copy()
+    
+    # Scan Matching Test
+    matching_m = GridMap(map_param, gsize=1.0)
+    SensorMapping(matching_m, env.bot_pos, env.bot_param, sensor_data)
+    matching_pos = np.array([150.0, 100.0, 180.0])
 
     # Main Loop
     while(1):
@@ -202,7 +221,7 @@ if __name__ == '__main__':
             img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            #pf.Feed(action, sensor_data)
+            pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             
@@ -210,19 +229,28 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
             cv2.imshow('p0_map',imgp0)
-            #pf.Resampling(sensor_data)
+            pf.Resampling(sensor_data)
 
-            xc = SensorData2PointCloud(sensor_rec, env.bot_pos, env.bot_param)
-            plt.plot(xc[:,0], xc[:,1], "b.")
-            pc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
-            plt.plot(pc[:,0], pc[:,1], "r.")
-            import Icp2d
-            R,T = Icp2d.Icp(10,pc,xc)
-            PP = Icp2d.Transform(xc, R, T)
+            pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
+            xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
+            R,T = Icp2d.Icp(100,pc,xc)
+            Ttot = np.array([[matching_pos[0], matching_pos[1]]])
+            Ttot = Icp2d.Transform(Ttot, R, T)[0]
+            theta = matching_pos[2]
+            deg = Rotation2Deg(R)
+            matching_pos = [Ttot[0], Ttot[1], matching_pos[2] + deg]
 
-            plt.plot(PP[:,0], PP[:,1], "g.")
-            plt.axis('equal')
-            plt.show()
+            SensorMapping(matching_m, matching_pos, env.bot_param, sensor_data)
+            matching_img = AdaptiveGetMap(matching_m)
+            cv2.imshow('matching_map',matching_img)
+
+            #plt.plot(xc[:,0], xc[:,1], "b.")
+            #plt.plot(pc[:,0], pc[:,1], "r.")
+            #PP = Icp2d.Transform(xc, R, T)
+            #plt.plot(PP[:,0], PP[:,1], "g.")
+            #plt.axis('equal')
+            #plt.show()
+            sensor_data_rec = sensor_data.copy()
 
         
     cv2.destroyAllWindows()

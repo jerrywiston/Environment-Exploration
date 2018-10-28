@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.neighbors import KDTree
 import matplotlib.pyplot as plt
 
-def Transform(X, R,T):
+def Transform(X, R, T):
     Xt = np.transpose(np.matmul(R, np.transpose(X)))
     for i in range(Xt.shape[0]):
         Xt[i] += T
@@ -22,6 +22,9 @@ def Align(Xc, Pc):
     return R, T
 
 def Icp(iter, X, P):
+    if X.shape[0] < 20:
+        return np.eye(2), np.zeros((2), dtype=float)
+    
     pc_match = P.copy()
     tree = KDTree(X, leaf_size=2)
     Rtot = np.eye(2)
