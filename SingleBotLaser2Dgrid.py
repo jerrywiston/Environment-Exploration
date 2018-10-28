@@ -6,6 +6,7 @@ import math
 from GridMap import *
 from ParticleFilter import *
 import copy
+import matplotlib.pyplot as plt
 
 class SingleBotLaser2Dgrid:
     def __init__(self, bot_pos, bot_param, fname):
@@ -133,6 +134,16 @@ def AdaptiveGetMap(gmap):
     mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
     return mimg
 
+def SensorData2PointCloud(sensor_data, bot_pos, bot_param):
+    plist = utils.EndPoint(bot_pos, bot_param, sensor_data)
+    tmp = []
+    for i in range(len(sensor_data)):
+        if sensor_data[i] > bot_param[3]-1 or sensor_data[i] < 1:
+            continue
+        tmp.append(plist[i])
+    tmp = np.array(tmp)
+    return tmp
+
 if __name__ == '__main__':
     # Initialize OpenCV Windows
     cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
@@ -158,6 +169,7 @@ if __name__ == '__main__':
 
     # Initialize Particle
     pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
+    sensor_rec = sensor_data.copy()
 
     # Main Loop
     while(1):
@@ -199,5 +211,18 @@ if __name__ == '__main__':
             cv2.imshow('map',mimg)
             cv2.imshow('p0_map',imgp0)
             #pf.Resampling(sensor_data)
+
+            xc = SensorData2PointCloud(sensor_rec, env.bot_pos, env.bot_param)
+            plt.plot(xc[:,0], xc[:,1], "b.")
+            pc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
+            plt.plot(pc[:,0], pc[:,1], "r.")
+            import Icp2d
+            R,T = Icp2d.Icp(10,pc,xc)
+            PP = Icp2d.Transform(xc, R, T)
+
+            plt.plot(PP[:,0], PP[:,1], "g.")
+            plt.axis('equal')
+            plt.show()
+
         
     cv2.destroyAllWindows()
