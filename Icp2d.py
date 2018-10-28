@@ -21,22 +21,30 @@ def Align(Xc, Pc):
     T = Xave - np.transpose(np.matmul(R, np.transpose(Pave)))
     return R, T
 
-def Icp(iter, X, P):
+def Rejection(Xc,Pc, R, T):
+    error = Xc - Pc
+    error = np.sum((error * error),1)
+    id_sort = np.argsort(error)
+    size = Xc.shape[0]
+    min_id = int(size*0.2)
+    max_id = int(size*0.8)
+    Xc = Xc[id_sort[min_id:max_id]]
+    Pc = Pc[id_sort[min_id:max_id]]
+
+    return Xc, Pc
+
+def Icp(iter, X, P, Rtot=np.eye(2), Ttot=np.zeros((2))):
     # X = R * P + T
-    if X.shape[0] < 20:
+    if X.shape[0] < 20 or P.shape[0] < 20:
         return np.eye(2), np.zeros((2), dtype=float)
     
     pc_match = P.copy()
     tree = KDTree(X, leaf_size=2)
-    Rtot = np.eye(2)
-    Ttot = np.zeros((2))
-
-    R = np.eye(2)
-    Ttot = np.zeros((2))
 
     for i in range(iter):
         Pc = Transform(pc_match, Rtot, Ttot)
         Xc = X[tree.query(Pc, k=1)[1]].reshape(Pc.shape)
+        Xc, Pc = Rejection(Xc,Pc, Rtot, Ttot)
         R, T = Align(Xc, Pc)
 
         Rtot = np.matmul(R,Rtot)

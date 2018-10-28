@@ -72,7 +72,7 @@ class SingleBotLaser2Dgrid:
         for p in plist:
             if p[1] >= self.img_map.shape[0] or p[0] >= self.img_map.shape[1]:
                 continue
-            if self.img_map[p[1], p[0]] < 0.8:
+            if self.img_map[p[1], p[0]] < 0.6:
                 tmp = math.pow((float(p[0]) - x0), 2) + math.pow((float(p[1]) - y0), 2)
                 tmp = math.sqrt(tmp)
                 dist.append(tmp)
@@ -165,9 +165,9 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [360, -30.0, 210.0, 150.0, 6.0, 6.0]
+    bot_param = [500, -30.0, 210.0, 150.0, 3.0, 3.0]
     bot_pos = np.array([150.0, 100.0, 180.0])
-    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
+    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map_large.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
@@ -245,11 +245,11 @@ if __name__ == '__main__':
             cv2.imshow('matching_map',matching_img)
 
             #plt.plot(xc[:,0], xc[:,1], "b.")
-            plt.plot(pc[:,0], pc[:,1], "r.")
-            PP = Icp2d.Transform(xc, R, T)
-            plt.plot(PP[:,0], PP[:,1], "g.")
-            plt.axis('equal')
-            plt.show()
+            #plt.plot(pc[:,0], pc[:,1], "r.")
+            #PP = Icp2d.Transform(xc, R, T)
+            #plt.plot(PP[:,0], PP[:,1], "g.")
+            #plt.axis('equal')
+            #plt.show()
             sensor_data_rec = sensor_data.copy()
 
         
