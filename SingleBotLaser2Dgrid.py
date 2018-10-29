@@ -61,25 +61,22 @@ class SingleBotLaser2Dgrid:
         return sense_data
 
     def RayCast(self, pos, theta):
-        max_dist = self.bot_param[3]
-        end = np.array((pos[0] + max_dist*np.cos(np.deg2rad(theta)), pos[1] + max_dist*np.sin(np.deg2rad(theta))))
+        end = np.array((pos[0] + bot_param[3]*np.cos(np.deg2rad(theta)), pos[1] + bot_param[3]*np.sin(np.deg2rad(theta))))
 
         x0, y0 = int(pos[0]), int(pos[1])
         x1, y1 = int(end[0]), int(end[1])
         plist = utils.Bresenham(x0, x1, y0, y1)
         i = 0
-        dist = []
+        dist = self.bot_param[3]
         for p in plist:
-            if p[1] >= self.img_map.shape[0] or p[0] >= self.img_map.shape[1]:
+            if p[1] >= self.img_map.shape[0] or p[0] >= self.img_map.shape[1] or p[1]<0 or p[0]<0:
                 continue
             if self.img_map[p[1], p[0]] < 0.6:
-                tmp = math.pow((float(p[0]) - x0), 2) + math.pow((float(p[1]) - y0), 2)
+                tmp = math.pow(float(p[0]) - pos[0], 2) + math.pow(float(p[1]) - pos[1], 2)
                 tmp = math.sqrt(tmp)
-                dist.append(tmp)
-        if len(dist) == 0:
-            return max_dist
-        else:
-            return np.min(np.array(dist))
+                if tmp < dist:
+                    dist = tmp
+        return dist
 
     def Image2Map(self, fname):
         im = cv2.imread(fname)
@@ -157,6 +154,7 @@ def DrawAlign(Xc, Pc, R, T):
     img = 255*np.ones((int(max_y-min_y+2*shift),int(max_x-min_x+2*shift),3), np.uint8)
     for i in range(Xc_.shape[0]):
         cv2.circle(img, (int(Xc[i,0]-min_x+shift), int(Xc[i,1]-min_y+shift)), int(2), (200,200,200), -1)
+    for i in range(Xc.shape[0]):
         cv2.circle(img, (int(Xc_[i,0]-min_x+shift), int(Xc_[i,1]-min_y+shift)), int(2), (0,0,255), -1)
     for i in range(Pc.shape[0]):
         cv2.circle(img, (int(Pc[i,0]-min_x+shift), int(Pc[i,1]-min_y+shift)), int(2), (255,0,0), -1)
@@ -191,9 +189,9 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [300, -30.0, 210.0, 150.0, 6.0, 6.0]
+    bot_param = [480,-30.0, 210.0, 200.0, 6.0, 6.0]
     bot_pos = np.array([150.0, 100.0, 0.0])
-    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map_large.png')
+    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
@@ -208,7 +206,7 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 50)
+    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 80)
     sensor_data_rec = sensor_data.copy()
     
     # Scan Matching Test
@@ -247,7 +245,7 @@ if __name__ == '__main__':
             img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            pf.Feed(action, sensor_data)
+            #pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             
@@ -255,8 +253,8 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
 
-            cv2.imshow('particle_map',imgp0)
-            pf.Resampling(sensor_data)
+            #cv2.imshow('particle_map',imgp0)
+            #pf.Resampling(sensor_data)
 
             pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
             xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
@@ -264,8 +262,10 @@ if __name__ == '__main__':
             Ttot = np.array([[matching_pos[0], matching_pos[1]]])
             Ttot = Icp2d.Transform(Ttot, R, T)[0]
             theta = matching_pos[2]
-            deg = Rotation2Deg(R)
-            matching_pos = [Ttot[0], Ttot[1], matching_pos[2] + deg]
+            Rtot = np.array([[np.cos(np.deg2rad(theta)), -np.sin(np.deg2rad(theta))],
+                             [np.sin(np.deg2rad(theta)), np.cos(np.deg2rad(theta))]])
+            deg = Rotation2Deg(np.matmul(R,Rtot))
+            matching_pos = [Ttot[0], Ttot[1], deg]
             aimg = DrawAlign(xc, pc, R, T)
             cv2.imshow('align',aimg)
 

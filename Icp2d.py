@@ -26,8 +26,8 @@ def Rejection(Xc,Pc, R, T):
     error = np.sum((error * error),1)
     id_sort = np.argsort(error)
     size = Xc.shape[0]
-    min_id = int(size*0.2)
-    max_id = int(size*0.8)
+    min_id = int(size*0.1)
+    max_id = int(size*0.9)
     Xc = Xc[id_sort[min_id:max_id]]
     Pc = Pc[id_sort[min_id:max_id]]
 
