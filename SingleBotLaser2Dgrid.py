@@ -156,9 +156,10 @@ def DrawAlign(Xc, Pc, R, T):
     min_y = np.min(np.array([np.min(Xc_[:,1]), np.min(Pc[:,1])]) )
     img = 255*np.ones((int(max_y-min_y+2*shift),int(max_x-min_x+2*shift),3), np.uint8)
     for i in range(Xc_.shape[0]):
-       cv2.circle(img, (int(Xc_[i,0]-min_x+shift), int(Xc_[i,1]-min_y+shift)), int(2), (0,0,255), -1)
+        cv2.circle(img, (int(Xc[i,0]-min_x+shift), int(Xc[i,1]-min_y+shift)), int(2), (200,200,200), -1)
+        cv2.circle(img, (int(Xc_[i,0]-min_x+shift), int(Xc_[i,1]-min_y+shift)), int(2), (0,0,255), -1)
     for i in range(Pc.shape[0]):
-       cv2.circle(img, (int(Pc[i,0]-min_x+shift), int(Pc[i,1]-min_y+shift)), int(2), (255,0,0), -1)
+        cv2.circle(img, (int(Pc[i,0]-min_x+shift), int(Pc[i,1]-min_y+shift)), int(2), (255,0,0), -1)
     return img
  
 def Rotation2Deg(R):
@@ -192,7 +193,7 @@ if __name__ == '__main__':
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
     bot_param = [300, -30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([150.0, 100.0, 0.0])
-    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
+    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map_large.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
