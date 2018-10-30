@@ -1,6 +1,8 @@
 import numpy as np
 from sklearn.neighbors import KDTree
 import matplotlib.pyplot as plt
+import utils
+import math
 
 def Transform(X, R, T):
     Xt = np.transpose(np.matmul(R, np.transpose(X)))
@@ -51,6 +53,33 @@ def Icp(iter, X, P, Rtot=np.eye(2), Ttot=np.zeros((2))):
         Ttot = T + np.matmul(R,Ttot)
     
     return Rtot, Ttot
+
+def RayCastMap(pos, bot_param, gmap):
+    sense_data = []
+    inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
+    for i in range(bot_param[0]):
+        theta = pos[2] + bot_param[1] + i*inter
+        dist, xy = RayCast(np.array((pos[0], pos[1])), theta, gmap, bot_param)
+        if dist > 0:
+            sense_data.append(xy)
+    return sense_data
+
+def RayCast(pos, theta, gmap, bot_param):
+    end = np.array((pos[0] + bot_param[3]*np.cos(np.deg2rad(theta)), pos[1] + bot_param[3]*np.sin(np.deg2rad(theta))))
+    x0, y0 = int(pos[0]), int(pos[1])
+    x1, y1 = int(end[0]), int(end[1])
+    plist = utils.Bresenham(x0, x1, y0, y1)
+    i = 0
+    dist = bot_param[3]
+    xy = [0,0]
+    for p in plist:
+        if gmap.GetCoordProb((p[1], p[0])) < 0.3:
+            tmp = math.pow(float(p[0]) - pos[0], 2) + math.pow(float(p[1]) - pos[1], 2)
+            tmp = math.sqrt(tmp)
+            if tmp < dist:
+                dist = tmp
+                xy = [p[0], p[1]]
+    return dist, xy
 
 if __name__ == '__main__':
     np.random.seed(0)

@@ -15,9 +15,9 @@ class SingleBotLaser2Dgrid:
         self.bot_param = bot_param
         self.img_map = self.Image2Map(fname)
 
-        scale = 0.5
+        scale = 1
         img = self.Image2Map(fname)
-        #img = cv2.resize(img, (round(scale*img.shape[1]), round(scale*img.shape[0])), interpolation=cv2.INTER_LINEAR)
+        img = cv2.resize(img, (round(scale*img.shape[1]), round(scale*img.shape[0])), interpolation=cv2.INTER_LINEAR)
         self.img_map = img
     
     def BotAction(self, aid):
@@ -110,6 +110,15 @@ def DrawParticle(img, plist, scale=1.0):
         cv2.circle(img,(int(scale*p.pos[0]), int(scale*p.pos[1])), int(2), (0,200,0), -1)
     return img
 
+def DrawPath(img, path, color=(50,200,50), scale=1.0):
+    for i in range(len(path)-1):
+        cv2.line(
+            img, 
+            (int(scale*path[i][0]), int(scale*path[i][1])), 
+            (int(scale*path[i+1][0]), int(scale*path[i+1][1])),
+            color, 2)
+    return img
+
 def SensorMapping(m, bot_pos, bot_param, sensor_data):
     inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
     for i in range(bot_param[0]):
@@ -189,9 +198,9 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [480,-30.0, 210.0, 200.0, 6.0, 6.0]
+    bot_param = [240,-30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([150.0, 100.0, 0.0])
-    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map.png')
+    env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'map_large.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
@@ -206,13 +215,16 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 80)
+    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
     sensor_data_rec = sensor_data.copy()
     
     # Scan Matching Test
     matching_m = GridMap(map_param, gsize=1.0)
     SensorMapping(matching_m, env.bot_pos, env.bot_param, sensor_data)
     matching_pos = np.array([150.0, 100.0, 0.0])
+    path = [bot_pos.copy()]
+    matching_path = [bot_pos.copy()]
+    particle_path = [bot_pos.copy()]
 
     # Main Loop
     while(1):
@@ -240,21 +252,21 @@ if __name__ == '__main__':
         if action > 0:
             env.BotAction(action)
             sensor_data = env.Sensor()
+            path.append(env.bot_pos.copy())
             SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
     
             img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            #pf.Feed(action, sensor_data)
+            pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
+            particle_path.append(pf.particle_list[mid].pos.copy())
             
             img = DrawParticle(img, pf.particle_list)
-            cv2.imshow('view',img)
-            cv2.imshow('map',mimg)
 
-            #cv2.imshow('particle_map',imgp0)
-            #pf.Resampling(sensor_data)
+            cv2.imshow('particle_map',imgp0)
+            pf.Resampling(sensor_data)
 
             pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
             xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
@@ -266,13 +278,19 @@ if __name__ == '__main__':
                              [np.sin(np.deg2rad(theta)), np.cos(np.deg2rad(theta))]])
             deg = Rotation2Deg(np.matmul(R,Rtot))
             matching_pos = [Ttot[0], Ttot[1], deg]
+            matching_path.append(np.array(matching_pos))
             aimg = DrawAlign(xc, pc, R, T)
-            cv2.imshow('align',aimg)
-
+            
             SensorMapping(matching_m, matching_pos, env.bot_param, sensor_data)
             matching_img = AdaptiveGetMap(matching_m)
-            cv2.imshow('matching_map',matching_img)
+            img = DrawPath(img, matching_path, color=(50,50,200))
+            img = DrawPath(img, particle_path, color=(200,50,50))
+            img = DrawPath(img, path)
 
+            cv2.imshow('align',aimg)
+            cv2.imshow('view',img)
+            cv2.imshow('map',mimg)
+            cv2.imshow('matching_map',matching_img)
             
             sensor_data_rec = sensor_data.copy()
 
