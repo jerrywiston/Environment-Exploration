@@ -85,11 +85,6 @@ class SingleBotLaser2D:
         m = m.astype(float) / 255.
         return m
 
-def Map2Image(m):
-    img = (255*m).astype(np.uint8)
-    img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-    return img
-
 def AdaptiveGetMap(gmap):
     mimg = gmap.GetMapProb(
         gmap.boundary[0]-20, gmap.boundary[1]+20, 

@@ -3,6 +3,12 @@ import random
 import utils
 import cv2
 import math
+import Icp2d
+
+def Map2Image(m):
+    img = (255*m).astype(np.uint8)
+    img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+    return img
 
 def DrawEnv(img_map, scale, bot_pos, sensor_data, bot_param):
     img = img_map.copy()

@@ -6,6 +6,7 @@ from ParticleFilter import *
 import utils
 import copy
 from Viewer import *
+import Icp2d
 
 def SensorMapping(m, bot_pos, bot_param, sensor_data):
     inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
@@ -29,7 +30,7 @@ if __name__ == '__main__':
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
     bot_param = [240,-30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([100.0, 100.0, 0.0])
-    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map_large.png')
+    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     sensor_data = env.Sensor()
     SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
 
-    img = Draw(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
+    img = DrawEnv(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
     mimg = AdaptiveGetMap(m)
     cv2.imshow('view',img)
     cv2.imshow('map',mimg)
