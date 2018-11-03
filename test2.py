@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
     bot_param = [240,-30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([100.0, 100.0, 0.0])
-    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map.png')
+    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map_large.png')
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
