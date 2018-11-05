@@ -54,7 +54,7 @@ class Particle:
         for i in range(len(plist)):
             if sensor_data[i] > self.bot_param[3]-1 or sensor_data[i] < 1:
                 continue
-            dist = self.NearestDistance(plist[i][0], plist[i][1], 4, 0.6)
+            dist = self.NearestDistance(plist[i][0], plist[i][1], 4, 0.8)
             q = q * (p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
             #q += math.log(p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
         return q
