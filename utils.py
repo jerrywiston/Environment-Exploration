@@ -7,8 +7,8 @@ def EndPoint(pos, bot_param, sensor_data):
     for i in range(bot_param[0]):
         theta = pos[2] + bot_param[1] + i*inter
         pts_list.append(
-            [ pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta)),
-              pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta))] )
+            [ pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta-90)),
+              pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta-90))] )
     return pts_list
 
 def gaussian(x, mu, sig):

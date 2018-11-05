@@ -7,6 +7,7 @@ import utils
 import copy
 from Viewer import *
 import Icp2d
+from MotionModel import *
 
 def SensorMapping(m, bot_pos, bot_param, sensor_data):
     inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
@@ -16,9 +17,9 @@ def SensorMapping(m, bot_pos, bot_param, sensor_data):
         theta = bot_pos[2] + bot_param[1] + i*inter
         m.GridMapLine(
         int(bot_pos[0]), 
-        int(bot_pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta))),
+        int(bot_pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta-90))),
         int(bot_pos[1]),
-        int(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta)))
+        int(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta-90)))
         )
 
 if __name__ == '__main__':
@@ -30,11 +31,12 @@ if __name__ == '__main__':
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
     bot_param = [240,-30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([100.0, 100.0, 0.0])
-    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map_large.png')
+    motion = SimpleMotionModel(2,1,1)
+    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map.png', motion)
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
-    map_param = [0.4, -0.4, 5.0, -5.0] 
+    map_param = [0.4, -0.4, 5.0, -5.0]
     m = GridMap(map_param, gsize=1.0)
     sensor_data = env.Sensor()
     SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)
@@ -45,16 +47,18 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), 10)
+    total_particle = 10
+    pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), motion, total_particle)
     sensor_data_rec = sensor_data.copy()
-    
+    pimg = AdaptiveGetMap(pf.particle_list[0].gmap)
+    cv2.imshow('particle_map', pimg)
+
     # Scan Matching Test
     matching_m = GridMap(map_param, gsize=1.0)
     SensorMapping(matching_m, env.bot_pos, env.bot_param, sensor_data)
     matching_pos = bot_pos.copy()
     path = [bot_pos.copy()]
     matching_path = [bot_pos.copy()]
-    particle_path = [bot_pos.copy()]
 
     # Main Loop
     while(1):
@@ -70,15 +74,6 @@ if __name__ == '__main__':
         if k==ord('d'): 
             action = 4 
         
-        if k==ord('i'):
-            action = 5
-        if k==ord('j'):
-            action = 6
-        if k==ord('l'):
-            action = 7
-        if k==ord('k'):
-            action = 8
-        
         if action > 0:
             env.BotAction(action)
             sensor_data = env.Sensor()
@@ -88,16 +83,15 @@ if __name__ == '__main__':
             img = DrawEnv(env.img_map, 1, env.bot_pos, sensor_data, env.bot_param)
             mimg = AdaptiveGetMap(m)
             
-            pf.Feed(action, sensor_data)
+            Neff = pf.Feed(action, sensor_data)
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
-            particle_path.append(pf.particle_list[mid].pos.copy())
+            particle_path = pf.particle_list[mid].trajectory
             
             img = DrawParticle(img, pf.particle_list)
-
-            cv2.imshow('particle_map',imgp0)
-            pf.Resampling(sensor_data)
-
+            if Neff < total_particle / 2:
+                pf.Resampling(sensor_data)
+            
             pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
             xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
             R,T = Icp2d.Icp(300,pc,xc)
@@ -121,8 +115,8 @@ if __name__ == '__main__':
             cv2.imshow('view',img)
             cv2.imshow('map',mimg)
             cv2.imshow('matching_map',matching_img)
+            cv2.imshow('particle_map',imgp0)
             
             sensor_data_rec = sensor_data.copy()
 
-        
     cv2.destroyAllWindows()

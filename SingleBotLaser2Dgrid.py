@@ -8,12 +8,14 @@ from ParticleFilter import *
 import copy
 import matplotlib.pyplot as plt
 import Icp2d
+from MotionModel import *
 
 class SingleBotLaser2D:
-    def __init__(self, bot_pos, bot_param, fname):
+    def __init__(self, bot_pos, bot_param, fname, motion):
         self.bot_pos = bot_pos
         self.bot_param = bot_param
         self.img_map = self.Image2Map(fname)
+        self.motion = motion
 
         scale = 1
         img = self.Image2Map(fname)
@@ -21,36 +23,14 @@ class SingleBotLaser2D:
         self.img_map = img
     
     def BotAction(self, aid):
-        vec = [np.sin(np.deg2rad(self.bot_pos[2])), np.cos(np.deg2rad(self.bot_pos[2]))]
-        vel = self.bot_param[4]
-        ang = self.bot_param[5]
-
         if aid == 1:
-            self.bot_pos[0] -= vel*vec[0]
-            self.bot_pos[1] += vel*vec[1]
+            self.bot_pos = self.motion.Sample(self.bot_pos, self.bot_param[4], 0, 0)
         if aid == 2:
-            self.bot_pos[0] += vel*vec[0]
-            self.bot_pos[1] -= vel*vec[1]
+            self.bot_pos = self.motion.Sample(self.bot_pos, -self.bot_param[4], 0, 0)
         if aid == 3:
-            self.bot_pos[2] -= ang
-            self.bot_pos[2] = self.bot_pos[2] % 360
+            self.bot_pos = self.motion.Sample(self.bot_pos, 0, 0, -self.bot_param[5])
         if aid == 4:  
-            self.bot_pos[2] += ang
-            self.bot_pos[2] = self.bot_pos[2] % 360
-        
-        if aid == 5:
-            self.bot_pos[1] -= vel
-        if aid == 6:
-            self.bot_pos[0] -= vel
-        if aid == 7:
-            self.bot_pos[0] += vel
-        if aid == 8:
-            self.bot_pos[1] += vel
-        
-        sig=[0.5,0.5,0.5]
-        self.bot_pos[0] += random.gauss(0,sig[0])
-        self.bot_pos[1] += random.gauss(0,sig[1])
-        self.bot_pos[2] += random.gauss(0,sig[2])
+            self.bot_pos = self.motion.Sample(self.bot_pos, 0, 0, self.bot_param[5])
 
     def Sensor(self):
         sense_data = []
@@ -61,7 +41,7 @@ class SingleBotLaser2D:
         return sense_data
 
     def RayCast(self, pos, theta):
-        end = np.array((pos[0] + self.bot_param[3]*np.cos(np.deg2rad(theta)), pos[1] + self.bot_param[3]*np.sin(np.deg2rad(theta))))
+        end = np.array((pos[0] + self.bot_param[3]*np.cos(np.deg2rad(theta-90)), pos[1] + self.bot_param[3]*np.sin(np.deg2rad(theta-90))))
 
         x0, y0 = int(pos[0]), int(pos[1])
         x1, y1 = int(end[0]), int(end[1])
