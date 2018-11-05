@@ -54,8 +54,8 @@ class Particle:
         for i in range(len(plist)):
             if sensor_data[i] > self.bot_param[3]-1 or sensor_data[i] < 1:
                 continue
-            dist = self.NearestDistance(plist[i][0], plist[i][1], 4, 1.0)
-            q = 4 * q * (p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
+            dist = self.NearestDistance(plist[i][0], plist[i][1], 4, 0.6)
+            q = q * (p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
             #q += math.log(p_hit*utils.gaussian(0,dist,sig_hit) + p_rand/self.bot_param[3])
         return q
 
@@ -93,6 +93,7 @@ class ParticleFilter:
             t.join()
 
     def Resampling(self, sensor_data):
+        print("Resample ...")
         map_rec = np.zeros((self.size))
         re_id = np.random.choice(self.size, self.size, p=list(self.weights))
         new_particle_list = []
@@ -100,6 +101,7 @@ class ParticleFilter:
             new_particle_list.append(copy.deepcopy(self.particle_list[re_id[i]]))
         self.particle_list = new_particle_list
         self.weights = np.ones((self.size), dtype=float) / float(self.size)
+        print("Done !!")
 
     def Feed(self, control, sensor_data):
         field = np.zeros((self.size), dtype=float)
@@ -107,7 +109,7 @@ class ParticleFilter:
             self.particle_list[i].Sampling(control)
             field[i] = self.particle_list[i].LikelihoodField(sensor_data)
             self.particle_list[i].Mapping(sensor_data)
-        print(field)
+
         if np.sum(field) != 0:
             self.weights = field / np.sum(field)
         
@@ -115,6 +117,5 @@ class ParticleFilter:
         for i in range(self.weights.shape[0]):
             Neff += self.weights[i]*self.weights[i]
         Neff = 1.0 / Neff
-        print(Neff)
-        print(self.weights)
+        print("Neff:", Neff)
         return Neff

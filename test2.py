@@ -29,10 +29,10 @@ if __name__ == '__main__':
 
     # Initialize 2D Environment
     # SensorSize, StartAngle, EndAngle, MaxDist, Velocity, Angular
-    bot_param = [240,-30.0, 210.0, 150.0, 6.0, 6.0]
+    bot_param = [120,-30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([100.0, 100.0, 0.0])
-    motion = SimpleMotionModel(2,1,1)
-    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map.png', motion)
+    motion = SimpleMotionModel(1.0, 1.0, 0.5)
+    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map_large.png', motion)
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
@@ -47,7 +47,7 @@ if __name__ == '__main__':
     cv2.imshow('map',mimg)
 
     # Initialize Particle
-    total_particle = 10
+    total_particle = 50
     pf = ParticleFilter(bot_pos.copy(), bot_param, copy.deepcopy(m), motion, total_particle)
     sensor_data_rec = sensor_data.copy()
     pimg = AdaptiveGetMap(pf.particle_list[0].gmap)
@@ -87,10 +87,10 @@ if __name__ == '__main__':
             mid = np.argmax(pf.weights)
             imgp0 = AdaptiveGetMap(pf.particle_list[mid].gmap)
             particle_path = pf.particle_list[mid].trajectory
-            
-            img = DrawParticle(img, pf.particle_list)
+
             if Neff < total_particle / 2:
                 pf.Resampling(sensor_data)
+            img = DrawParticle(img, pf.particle_list)
             
             pc = SensorData2PointCloud(sensor_data_rec, env.bot_pos, env.bot_param)
             xc = SensorData2PointCloud(sensor_data, env.bot_pos, env.bot_param)
