@@ -10,17 +10,20 @@ def Map2Image(m):
     img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
     return img
 
-def DrawEnv(img_map, scale, bot_pos, sensor_data, bot_param):
+def DrawEnv(img_map, scale=1.0):
     img = img_map.copy()
     img = cv2.resize(img, (round(scale*img.shape[1]), round(scale*img.shape[0])), interpolation=cv2.INTER_LINEAR)
     img = Map2Image(img)
+    return img
+
+def DrawBot(img, bot_pos, sensor_data, bot_param, color=(0,255,0), scale=1.0):
     plist = utils.EndPoint(bot_pos, bot_param, sensor_data)
     for pts in plist:
         cv2.line(
             img, 
             (int(scale*bot_pos[0]), int(scale*bot_pos[1])), 
             (int(scale*pts[0]), int(scale*pts[1])),
-            (255,0,0), 1)
+            color, 1)
 
     cv2.circle(img,(int(scale*bot_pos[0]), int(scale*bot_pos[1])), int(5*scale), (0,0,255), -1)
     return img
@@ -30,7 +33,7 @@ def DrawParticle(img, plist, scale=1.0):
         cv2.circle(img,(int(scale*p.pos[0]), int(scale*p.pos[1])), int(2), (0,200,0), -1)
     return img
 
-def DrawPath(img, path, color=(50,200,50), scale=1.0):
+def DrawPath(img, path, color=(255,50,50), scale=1.0):
     for i in range(len(path)-1):
         cv2.line(
             img, 

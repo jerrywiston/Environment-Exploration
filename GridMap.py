@@ -1,5 +1,6 @@
 import numpy as np
 import utils
+import cv2
 
 class GridMap:
     def __init__(self, map_param, gsize=1.0):
@@ -7,6 +8,21 @@ class GridMap:
         self.gmap = {}
         self.gsize = gsize
         self.boundary = [9999,-9999,9999,-9999]
+
+    def getObs(self, pos, lx, ly):
+        x, y = int(round(pos[0]/self.gsize)), int(round(pos[1]/self.gsize))
+        ang = pos[2] + 90
+        obs = np.zeros((2*ly,2*lx))
+        idx = 0
+        for i in range(-lx,lx):
+            idy = 0
+            for j in range(-ly,ly):
+                rx = x + i*np.cos(np.deg2rad(ang)) - j*np.sin(np.deg2rad(ang))
+                ry = y + i*np.sin(np.deg2rad(ang)) + j*np.cos(np.deg2rad(ang))
+                obs[idy, idx] = self.GetGridProb((int(round(rx)),int(round(ry))))
+                idy += 1
+            idx += 1
+        return obs
 
     def GetGridProb(self, pos):
         if pos in self.gmap:
@@ -30,16 +46,21 @@ class GridMap:
         return map_prob
 
     def GridMapLine(self, x0, x1, y0, y1):
+        info_gain = 0
+
         # Scale the position
         x0, x1 = int(round(x0/self.gsize)), int(round(x1/self.gsize))
         y0, y1 = int(round(y0/self.gsize)), int(round(y1/self.gsize))
 
         rec = utils.Bresenham(x0, x1, y0, y1)
         for i in range(len(rec)):
+            p= self.GetGridProb(rec[i])
+            ent_last = p*np.log2(p) + (1-p)*np.log2(1-p)
+
             if i < len(rec)-2:
-                change = self.map_param[0]
-            else:
                 change = self.map_param[1]
+            else:
+                change = self.map_param[0]
 
             if rec[i] in self.gmap:
                 self.gmap[rec[i]] += change
@@ -58,7 +79,45 @@ class GridMap:
                 self.gmap[rec[i]] = self.map_param[2]
             if self.gmap[rec[i]] < self.map_param[3]:
                 self.gmap[rec[i]] = self.map_param[3]
+            
+            p= self.GetGridProb(rec[i])
+            ent_new = p*np.log2(p) + (1-p)*np.log2(1-p)
+            info_gain += (ent_new - ent_last)
+        return info_gain
     
+    def MapEntropy(self,x0,x1,y0,y1):
+        m = self.GetMapProb(x0,x1,y0,y1)
+        ent = 0
+        for i in range(m.shape[1]):
+            for j in range(m.shape[0]):
+                p = m[j,i]
+                ent += p*np.log2(p) + (1-p)*np.log2(1-p)
+        return ent
+
+def AdaptiveGetMap(gmap):
+    mimg = gmap.GetMapProb(
+        gmap.boundary[0]-20, gmap.boundary[1]+20, 
+        gmap.boundary[2]-20, gmap.boundary[3]+20 )
+    #mimg = gmap.GetMapProb(0,500,0,500)
+    mimg = (255*mimg).astype(np.uint8)
+    mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
+    return mimg
+
+def SensorMapping(m, bot_pos, bot_param, sensor_data):
+    inter = (bot_param[2] - bot_param[1]) / (bot_param[0]-1)
+    info_gain = 0
+    for i in range(bot_param[0]):
+        if sensor_data[i] > bot_param[3]-1 or sensor_data[i] < 1:
+            continue
+        theta = bot_pos[2] + bot_param[1] + i*inter
+        info_gain += m.GridMapLine(
+        int(bot_pos[0]), 
+        int(bot_pos[0]+sensor_data[i]*np.cos(np.deg2rad(theta-90))),
+        int(bot_pos[1]),
+        int(bot_pos[1]+sensor_data[i]*np.sin(np.deg2rad(theta-90)))
+        )
+    return info_gain
+
 if __name__ == '__main__':
     #lo_occ, lo_free, lo_max, lo_min
     map_param = [0.9, -0.7, 5.0, -5.0]

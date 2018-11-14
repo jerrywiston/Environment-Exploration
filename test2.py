@@ -32,11 +32,11 @@ if __name__ == '__main__':
     bot_param = [240,-30.0, 210.0, 150.0, 6.0, 6.0]
     bot_pos = np.array([100.0, 100.0, 90.0])
     motion = SimpleMotionModel(0.5, 0.5, 0.3)
-    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map_large.png', motion)
+    env = SingleBotLaser2D(bot_pos, bot_param, 'Image/map3.png', motion)
 
     # Initialize GridMap
     # lo_occ, lo_free, lo_max, lo_min
-    map_param = [0.4, -0.4, 5.0, -5.0]
+    map_param = [-0.4, 0.2, 5.0, -5.0]
     m = GridMap(map_param, gsize=1.0)
     sensor_data = env.Sensor()
     SensorMapping(m, env.bot_pos, env.bot_param, sensor_data)

@@ -16,6 +16,7 @@ class SingleBotLaser2D:
         self.bot_param = bot_param
         self.img_map = self.Image2Map(fname)
         self.motion = motion
+        self.path = [bot_pos]
 
         scale = 1
         img = self.Image2Map(fname)
@@ -24,13 +25,31 @@ class SingleBotLaser2D:
     
     def BotAction(self, aid):
         if aid == 1:
-            self.bot_pos = self.motion.Sample(self.bot_pos, self.bot_param[4], 0, 0)
+            pos_new = self.motion.Sample(self.bot_pos, self.bot_param[4], 0, 0)
         if aid == 2:
-            self.bot_pos = self.motion.Sample(self.bot_pos, -self.bot_param[4], 0, 0)
+            pos_new = self.motion.Sample(self.bot_pos, -self.bot_param[4], 0, 0)
         if aid == 3:
-            self.bot_pos = self.motion.Sample(self.bot_pos, 0, 0, -self.bot_param[5])
+            pos_new = self.motion.Sample(self.bot_pos, 0, 0, -self.bot_param[5])
         if aid == 4:  
-            self.bot_pos = self.motion.Sample(self.bot_pos, 0, 0, self.bot_param[5])
+            pos_new = self.motion.Sample(self.bot_pos, 0, 0, self.bot_param[5])
+
+        # Judge if collision
+        x0, x1 = int(round(self.bot_pos[0])), int(round(pos_new[0]))
+        y0, y1 = int(round(self.bot_pos[1])), int(round(pos_new[1]))
+        rec = utils.Bresenham(x0, x1, y0, y1)
+        rec.append((x1,y1))
+        
+        collision = False
+        for i in range(len(rec)):
+            if self.img_map[rec[i][1], rec[i][0]] < 0.5:
+                print("Detect:",(rec[i][1], rec[i][0]))
+                collision = True
+        
+        if collision == False:
+            self.bot_pos = pos_new
+
+        self.path.append(self.bot_pos)
+        return collision
 
     def Sensor(self):
         sense_data = []
@@ -51,7 +70,7 @@ class SingleBotLaser2D:
         for p in plist:
             if p[1] >= self.img_map.shape[0] or p[0] >= self.img_map.shape[1] or p[1]<0 or p[0]<0:
                 continue
-            if self.img_map[p[1], p[0]] < 0.6:
+            if self.img_map[p[1], p[0]] < 0.5:
                 tmp = math.pow(float(p[0]) - pos[0], 2) + math.pow(float(p[1]) - pos[1], 2)
                 tmp = math.sqrt(tmp)
                 if tmp < dist:
@@ -64,15 +83,6 @@ class SingleBotLaser2D:
         m = cv2.cvtColor(m, cv2.COLOR_RGB2GRAY)
         m = m.astype(float) / 255.
         return m
-
-def AdaptiveGetMap(gmap):
-    mimg = gmap.GetMapProb(
-        gmap.boundary[0]-20, gmap.boundary[1]+20, 
-        gmap.boundary[2]-20, gmap.boundary[3]+20 )
-    #mimg = gmap.GetMapProb(0,500,0,500)
-    mimg = (255*mimg).astype(np.uint8)
-    mimg = cv2.cvtColor(mimg, cv2.COLOR_GRAY2RGB)
-    return mimg
 
 def SensorData2PointCloud(sensor_data, bot_pos, bot_param):
     plist = utils.EndPoint(bot_pos, bot_param, sensor_data)
